@@ -180,7 +180,8 @@ while len(txnBuffer) > 0:
     chain.append(myBlock)
 
 
-
+chainAsText = json.dumps(chain,sort_keys=True)
+checkChain(chainAsText) #add verification
 
 
 
