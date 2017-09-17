@@ -24,28 +24,28 @@ def main():
                         'RTM replied with the error {0}: {1}'.format(
                             pdu['body']['error'], pdu['body']['reason']))
 
-            message = {"lat": "37.7757407", "lon": "-122.38955","alert":"3"}
+            message = {"lat": "37.77493", "lon": "-122.419416","alert":"3"}
             client.publish("phoneSpoof", message, callback=on_publish_ack)
             time.sleep(5)
-            message = {"lat": "37.7657407", "lon": "-122.35955","alert":"2"}
+            message = {"lat": "37.768001", "lon": "-122.446747","alert":"2"}
             client.publish("phoneSpoof", message, callback=on_publish_ack)
             time.sleep(5)
-            message = {"lat": "37.9757407", "lon": "-122.38955","alert":"3"}
+            message = {"lat": "37.756126", "lon": "-122.433615","alert":"3"}
             client.publish("phoneSpoof", message, callback=on_publish_ack)
             time.sleep(5)
-            message = {"lat": "37.2757407", "lon": "-122.31955","alert":"1"}
+            message = {"lat": "37.751478", "lon": "-122.437177","alert":"1"}
             client.publish("phoneSpoof", message, callback=on_publish_ack)
             time.sleep(5)
-            message = {"lat": "37.4757407", "lon": "-122.33955","alert":"3"}
+            message = {"lat": "37.749815", "lon": "-122.417908","alert":"3"}
             client.publish("phoneSpoof", message, callback=on_publish_ack)
             time.sleep(5)
-            message = {"lat": "37.7557407", "lon": "-122.38955","alert":"2"}
+            message = {"lat": "37.755244", "lon": "-122.396107","alert":"2"}
             client.publish("phoneSpoof", message, callback=on_publish_ack)
             time.sleep(5)
-            message = {"lat": "37.6257407", "lon": "-122.31955","alert":"3"}
+            message = {"lat": "37.734069", "lon": "-122.392845","alert":"3"}
             client.publish("phoneSpoof", message, callback=on_publish_ack)
             time.sleep(5)
-            message = {"lat": "37.6957407", "lon": "-122.32955","alert":"1"}
+            message = {"lat": "37.752665", "lon": "-122.480221","alert":"1"}
             client.publish("phoneSpoof", message, callback=on_publish_ack)
             time.sleep(20)
 
