@@ -20,8 +20,8 @@ let app = Express()
 
 var RTM = require("satori-rtm-sdk");
 
-var endpoint = "wss://h0j3zwoo.api.satori.com";
-var appkey = "d3fE5A8bc1D9C2e8761DfCf7d6cab13a";
+var endpoint = "";
+var appkey = "";
 
 var client = new RTM(endpoint, appkey);
 
