@@ -68,6 +68,8 @@ def makeTransaction(maxValue=3):
 
     publish() #Update Satori channel
 
+    time.sleep(3) #Simulate transactions over time
+    
     # Need overdraft check
     return {u'Eservice':eservicePays,u'Bob':bobPays, u'Alice':alicePays, u'Charles':charlesPays,u'Derek':derekPays}
 
