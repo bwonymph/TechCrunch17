@@ -1,5 +1,48 @@
 import hashlib, json, sys
 
+from __future__ import print_function
+
+import time
+
+from satori.rtm.client import make_client
+
+
+############## EXPLANATION #####################
+
+#This is a localized blockchain which keeps track of individuals which call the service.
+#For the sake of this project, there are 4 individuals here, Alice, Bob, Charles and Derek. 
+#Each individual is assigned one coin, which represenets that they are saved. Once they call into the system,
+#They give their coin to Eservice address, which holds all coins from every individual. Once someone is saved, 
+#they are given back their coin/token. In this manner, if the Eservice entity is holding onto any amount of coins,
+#then there are people out there that needs to be saved. More blocks can be mined, as more people join the service. 
+
+#All blocks are verified and transactions are validated before moving into the chain in case of discrepancies or overdraft issues. 
+#Transactions are published to the Satori stream 
+
+
+endpoint = "wss://h0j3zwoo.api.satori.com"
+appkey = "d3fE5A8bc1D9C2e8761DfCf7d6cab13a"
+
+#Satori Stream functions
+
+def publish():
+
+    def on_publish_ack(pdu):
+        if pdu['action'] == 'rtm/publish/ok':
+            print('Publish confirmed')
+        else:
+            print(
+                  	'Failed to publish. '
+               	    'RTM replied with the error {0}: {1}'.format(
+        	            pdu['body']['error'], pdu['body']['reason']))
+
+    message = {"msg": "Person Saved", "lat": "37.7757407", "lon": "-122.38955"}
+    client.publish("saveChannel", message, callback=on_publish_ack)
+
+
+#Block Chain Functions
+
+
 def hashMe(msg=""):
     if type(msg)!=str:
         msg = json.dumps(msg,sort_keys=True)  #sort keys
@@ -17,11 +60,18 @@ def makeTransaction(maxValue=3):
     # Valid transactions in the range of (1,maxValue)
     sign      = int(random.getrandbits(1))*2 - 1   # This will randomly choose -1 or 1
     # amount    = random.randint(1,maxValue)
-    amount    = 6
+    amount    = 1
     alicePays = sign * amount
-    bobPays   = -1 * alicePays
+    eservicePays   = -1 * alicePays
+    derekPays = sign * amount
+    eservicePays = -1 * derekPays
+
+    publish() #Update Satori channel
+
+    time.sleep(3) #Simulate transactions over time
+    
     # Need overdraft check
-    return {u'Alice':alicePays,u'Bob':bobPays}
+    return {u'Eservice':eservicePays,u'Bob':bobPays, u'Alice':alicePays, u'Charles':charlesPays,u'Derek':derekPays}
 
 
 txnBuffer = [makeTransaction() for i in range(30)]
@@ -32,7 +82,7 @@ def updateState(txn, state):
     # Returns: Updated state, with additional users added to state if necessary
     
     # If the transaction is valid, then update the state
-    state = state.copy() # As dictionaries are mutable, let's avoid any confusion by creating a working copy of the data.
+    state = state.copy() 
     for key in txn:
         if key in state.keys():
             state[key] += txn[key]
@@ -43,7 +93,6 @@ def updateState(txn, state):
 def isValidTxn(txn,state):
     # Assume that the transaction is a dictionary keyed by account names
 
-    # Check that the sum of the deposits and withdrawals is 0
     if sum(txn.values()) is not 0:
         return False
     
@@ -72,7 +121,7 @@ def makeBlock(txns,chain):
 
 def checkBlockHash(block):
     # Raise an exception if the hash does not match the block contents
-    expectedHash = hashMe( block['contents'] )
+    expectedHash = hashMe( block['contents'] )  
     if block['hash']!=expectedHash:
         raise Exception('Hash does not match contents of block %s'%
                         block['contents']['blockNumber'])
@@ -144,8 +193,8 @@ def checkChain(chain):
     return state
 
 
-
-state = {u'Alice':50, u'Bob':50}  # Define the initial state
+state = {u'Alice':1, u'Bob':1, u'Eservice':0, u'Charles':1,u'Derek':1}  # Define the initial state
+#Eservice has 0 because it has no emergency to take care of, if it is >0 then there is people to be saved. 
 genesisBlockTxns = [state]
 genesisBlockContents = {u'blockNumber':0,u'parentHash':None,u'txnCount':1,u'txns':genesisBlockTxns}
 genesisHash = hashMe( genesisBlockContents )
@@ -180,17 +229,13 @@ while len(txnBuffer) > 0:
     chain.append(myBlock)
 
 
-chainAsText = json.dumps(chain,sort_keys=True)
-checkChain(chainAsText) #add verification
-
-
-
-
 
 
 
 ###############################################################################################################
 
+
+###This is to verify block chain when adding new users. Need to be moved to separate file
 
 import copy
 nodeBchain = copy.copy(chain)
@@ -207,23 +252,6 @@ except:
     print("Invalid block; ignoring and waiting for the next block...")
 
 print("Blockchain on Node A is now %s blocks long"%len(chain))
-#print(chain[1])
-#print(state)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print(chain[1])
+print(state)
 
