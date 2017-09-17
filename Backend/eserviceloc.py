@@ -4,8 +4,8 @@ import time
 
 from satori.rtm.client import make_client
 
-endpoint = "wss://h0j3zwoo.api.satori.com"
-appkey = "d3fE5A8bc1D9C2e8761DfCf7d6cab13a"
+endpoint = ""
+appkey = ""
 
 def main():
     with make_client(endpoint=endpoint, appkey=appkey) as client:
