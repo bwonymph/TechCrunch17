@@ -19,8 +19,8 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 #API endpoints for Satori
-endpoint = "wss://h0j3zwoo.api.satori.com"
-appkey = "d3fE5A8bc1D9C2e8761DfCf7d6cab13a"
+endpoint = "wss://"
+appkey = ""
 
 global timer2 
 global name_dir
