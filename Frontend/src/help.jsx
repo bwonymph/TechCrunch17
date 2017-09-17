@@ -8,7 +8,8 @@ class Help extends React.Component {
 
         this.state = {
             center : pier48sf,
-            input : ""
+            input : "",
+            publishId : -1
         };
     }
 
@@ -33,20 +34,51 @@ class Help extends React.Component {
             client : client
         });
     }
-    sendSignal(){
-        let message = {
-          lat: this.state.center[0],
-          lon: this.state.center[1],
-          msg: this.state.input
-        };
-        this.state.client.publish("help", message , function (pdu) {
-          if (pdu.action === 'rtm/publish/ok') {
-            console.log('Publish confirmed');
-          } else {
-            console.log('Failed to publish. RTM replied with the error  ' +
-                pdu.body.error + ': ' + pdu.body.reason);
-          }
+    getAcceptances(){
+        let self = this;
+        let help = this.state.client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
+        
+        help.on('rtm/subscription/data', (pdu) => {
+            pdu.body.messages.forEach((msg) => {
+                if(msg.type === "accepting" && msg.forId === self.state.publishId){
+                    console.log(pdu, msg, "accepted");
+                    Materialize.toast("Somebody has answered your SOS. They're on their way!", 20000);
+                } else {
+                    console.log(pdu);
+                    console.log("not me", msg.forId, self.state.publicId, msg.type);
+                }
+
+            });
         });
+    }
+    sendSignal(){
+        if(this.state.publishId === -1){
+            let id = Math.ceil(Math.random() * 2000000000);
+            console.log(id);
+            let message = {
+                lat: this.state.center[0],
+                lon: this.state.center[1],
+                msg: this.state.input,
+                id : id
+            };
+            this.setState({
+                publishId : id
+            });
+            let self = this;
+            this.state.client.publish("help", message , function (pdu) {
+                
+                if (pdu.action === 'rtm/publish/ok') {
+                  console.log('Publish confirmed');
+                  self.getAcceptances();
+                } else {
+                  console.log('Failed to publish. RTM replied with the error  ' +
+                      pdu.body.error + ': ' + pdu.body.reason);
+                }
+            });
+        } else {
+            Materialize.toast("You have already sent an SOS signal!", 4000);
+        }
+        
     }
 
     map(){

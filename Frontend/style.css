@@ -40,3 +40,6 @@
 #direction-cancel:hover {
     cursor: pointer;
 }
+.clickable:hover {
+    cursor : pointer;
+}

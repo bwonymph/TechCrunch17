@@ -13,20 +13,14 @@ class SOS extends React.Component {
             trafficLayer : null,
             directionsLayer : null,
             markerText : null,
-            mounted : true
         };
     }
 
     componentDidMount(){
         this.map();
         this.getSignals();
-        this.setState({
-            mounted : true
-        });
+
     }
-    componentWillUnmount() {
-        this.setState({mounted:false});
-     }
     setCurrentLocation(){
         let self = this;
         navigator.geolocation.getCurrentPosition((position)=>{
@@ -85,10 +79,26 @@ class SOS extends React.Component {
         this.state.map.addLayer(this.state.trafficLayer);
         this.state.map.removeLayer(this.state.directionsLayer);
         this.setState({
-            markerText : null
+            markerText : null,
+            directionsLayer : null
         });
     }
-
+    acceptCurrentRequest(){
+        let self = this;
+        let message = {
+            type : "accepting",
+            forId : this.state.currentPublishId
+        };
+        this.state.client.publish("help", message , function (pdu) {
+            if (pdu.action === 'rtm/publish/ok') {
+              console.log('Publish confirmed');
+              Materialize.toast("You have accepted an SOS. Thank you!", 2000);
+            } else {
+              console.log('Failed to publish. RTM replied with the error  ' +
+                  pdu.body.error + ': ' + pdu.body.reason);
+            }
+        });
+    }
     getSignals(){
         let self = this;
         let client = new RTM(satori.endpoint, satori.appkey);
@@ -101,6 +111,10 @@ class SOS extends React.Component {
         });
 
         client.start();
+        this.setState({
+            client : client
+        });
+        
 
         let help = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
         let phoneSpoof = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
@@ -110,22 +124,23 @@ class SOS extends React.Component {
         phoneSpoof.on('rtm/subscription/data', handler);
 
         function handler(pdu) {
-            if(self.state.mounted){
-                pdu.body.messages.forEach(function (msg) {
-                    console.log(msg);
-                    let coords = [msg.lat, msg.lon];
-                    let marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
-                    marker.addTo(self.state.map);
-                    let peer = {
-                        marker : marker,
-                        extraData : msg
-                    };
-                    self.setState({
-                        peers : [...self.state.peers, peer]
-                    });
+            pdu.body.messages.forEach(function (msg) {
+                //console.log(msg);
+                let coords = [msg.lat, msg.lon];
+                let marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
+                marker.publishId = msg.id;
+                marker.addTo(self.state.map);
+                let peer = {
+                    marker : marker,
+                    extraData : msg
+                };
+                console.log(pdu);
+                self.setState({
+                    peers : [...self.state.peers, peer]
                 });
-            }
+            });
         }
+    
     }
     getNewMarker(coords, symbol, msg=null){
         let self = this;
@@ -158,6 +173,10 @@ class SOS extends React.Component {
         
         marker.on('click', (e)=>{
             self.renderDirections(marker, e.latlng);
+            console.log(marker.publishId);
+            self.setState({
+                currentPublishId : marker.publishId
+            });
         });
         return marker;
         function getRandomColor(){
@@ -188,7 +207,7 @@ class SOS extends React.Component {
             });
             self.setState({
                 directionsLayer : directionsLayer,
-                markerText : marker.extraData
+                markerText : marker.extraData || "No message was attached to this SOS"
             });
             directionsLayer.addTo(self.state.map);
             self.state.map.removeLayer(self.state.trafficLayer);                    
@@ -213,9 +232,8 @@ class SOS extends React.Component {
                                 <span className="card-title">SOS Text</span>
                                 <p>{this.state.markerText}</p>
                             </div>
-                            <div className="card-action">
-                                <a href="#">This is a link</a>
-                                <a href="#">This is a link</a>
+                            <div className="card-action white-text">
+                                <a className="clickable" onClick={()=>this.acceptCurrentRequest()}>Accept</a>
                             </div>
                         </div>
                     </div>

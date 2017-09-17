@@ -27072,8 +27072,7 @@ var SOS = function (_React$Component) {
             map: null,
             trafficLayer: null,
             directionsLayer: null,
-            markerText: null,
-            mounted: true
+            markerText: null
         };
         return _this;
     }
@@ -27083,14 +27082,6 @@ var SOS = function (_React$Component) {
         value: function componentDidMount() {
             this.map();
             this.getSignals();
-            this.setState({
-                mounted: true
-            });
-        }
-    }, {
-        key: "componentWillUnmount",
-        value: function componentWillUnmount() {
-            this.setState({ mounted: false });
         }
     }, {
         key: "setCurrentLocation",
@@ -27154,7 +27145,25 @@ var SOS = function (_React$Component) {
             this.state.map.addLayer(this.state.trafficLayer);
             this.state.map.removeLayer(this.state.directionsLayer);
             this.setState({
-                markerText: null
+                markerText: null,
+                directionsLayer: null
+            });
+        }
+    }, {
+        key: "acceptCurrentRequest",
+        value: function acceptCurrentRequest() {
+            var self = this;
+            var message = {
+                type: "accepting",
+                forId: this.state.currentPublishId
+            };
+            this.state.client.publish("help", message, function (pdu) {
+                if (pdu.action === 'rtm/publish/ok') {
+                    console.log('Publish confirmed');
+                    Materialize.toast("You have accepted an SOS. Thank you!", 2000);
+                } else {
+                    console.log('Failed to publish. RTM replied with the error  ' + pdu.body.error + ': ' + pdu.body.reason);
+                }
             });
         }
     }, {
@@ -27171,6 +27180,9 @@ var SOS = function (_React$Component) {
             });
 
             client.start();
+            this.setState({
+                client: client
+            });
 
             var help = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
             var phoneSpoof = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
@@ -27179,21 +27191,21 @@ var SOS = function (_React$Component) {
             phoneSpoof.on('rtm/subscription/data', handler);
 
             function handler(pdu) {
-                if (self.state.mounted) {
-                    pdu.body.messages.forEach(function (msg) {
-                        console.log(msg);
-                        var coords = [msg.lat, msg.lon];
-                        var marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
-                        marker.addTo(self.state.map);
-                        var peer = {
-                            marker: marker,
-                            extraData: msg
-                        };
-                        self.setState({
-                            peers: [].concat(_toConsumableArray(self.state.peers), [peer])
-                        });
+                pdu.body.messages.forEach(function (msg) {
+                    //console.log(msg);
+                    var coords = [msg.lat, msg.lon];
+                    var marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
+                    marker.publishId = msg.id;
+                    marker.addTo(self.state.map);
+                    var peer = {
+                        marker: marker,
+                        extraData: msg
+                    };
+                    console.log(pdu);
+                    self.setState({
+                        peers: [].concat(_toConsumableArray(self.state.peers), [peer])
                     });
-                }
+                });
             }
         }
     }, {
@@ -27231,6 +27243,10 @@ var SOS = function (_React$Component) {
 
             marker.on('click', function (e) {
                 self.renderDirections(marker, e.latlng);
+                console.log(marker.publishId);
+                self.setState({
+                    currentPublishId: marker.publishId
+                });
             });
             return marker;
             function getRandomColor() {
@@ -27263,7 +27279,7 @@ var SOS = function (_React$Component) {
                 });
                 self.setState({
                     directionsLayer: directionsLayer,
-                    markerText: marker.extraData
+                    markerText: marker.extraData || "No message was attached to this SOS"
                 });
                 directionsLayer.addTo(self.state.map);
                 self.state.map.removeLayer(self.state.trafficLayer);
@@ -27311,16 +27327,13 @@ var SOS = function (_React$Component) {
                         ),
                         _react2.default.createElement(
                             "div",
-                            { className: "card-action" },
+                            { className: "card-action white-text" },
                             _react2.default.createElement(
                                 "a",
-                                { href: "#" },
-                                "This is a link"
-                            ),
-                            _react2.default.createElement(
-                                "a",
-                                { href: "#" },
-                                "This is a link"
+                                { className: "clickable", onClick: function onClick() {
+                                        return _this2.acceptCurrentRequest();
+                                    } },
+                                "Accept"
                             )
                         )
                     )
@@ -27549,7 +27562,8 @@ var Help = function (_React$Component) {
 
         _this.state = {
             center: _globals.pier48sf,
-            input: ""
+            input: "",
+            publishId: -1
         };
         return _this;
     }
@@ -27579,20 +27593,51 @@ var Help = function (_React$Component) {
             });
         }
     }, {
+        key: "getAcceptances",
+        value: function getAcceptances() {
+            var self = this;
+            var help = this.state.client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
+
+            help.on('rtm/subscription/data', function (pdu) {
+                pdu.body.messages.forEach(function (msg) {
+                    if (msg.type === "accepting" && msg.forId === self.state.publishId) {
+                        console.log(pdu, msg, "accepted");
+                        Materialize.toast("Somebody has answered your SOS. They're on their way!", 20000);
+                    } else {
+                        console.log(pdu);
+                        console.log("not me", msg.forId, self.state.publicId, msg.type);
+                    }
+                });
+            });
+        }
+    }, {
         key: "sendSignal",
         value: function sendSignal() {
-            var message = {
-                lat: this.state.center[0],
-                lon: this.state.center[1],
-                msg: this.state.input
-            };
-            this.state.client.publish("help", message, function (pdu) {
-                if (pdu.action === 'rtm/publish/ok') {
-                    console.log('Publish confirmed');
-                } else {
-                    console.log('Failed to publish. RTM replied with the error  ' + pdu.body.error + ': ' + pdu.body.reason);
-                }
-            });
+            if (this.state.publishId === -1) {
+                var id = Math.ceil(Math.random() * 2000000000);
+                console.log(id);
+                var message = {
+                    lat: this.state.center[0],
+                    lon: this.state.center[1],
+                    msg: this.state.input,
+                    id: id
+                };
+                this.setState({
+                    publishId: id
+                });
+                var self = this;
+                this.state.client.publish("help", message, function (pdu) {
+
+                    if (pdu.action === 'rtm/publish/ok') {
+                        console.log('Publish confirmed');
+                        self.getAcceptances();
+                    } else {
+                        console.log('Failed to publish. RTM replied with the error  ' + pdu.body.error + ': ' + pdu.body.reason);
+                    }
+                });
+            } else {
+                Materialize.toast("You have already sent an SOS signal!", 4000);
+            }
         }
     }, {
         key: "map",
