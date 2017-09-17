@@ -10,8 +10,8 @@ function parse(str) {
 var Nexmo = require('nexmo');
 
 var nexmo = new Nexmo({
-    apiKey: 'd4f97f0e',
-    apiSecret: '2e02d0a63e14517f',
+    apiKey: '',
+    apiSecret: '',
   });
 
 var Express = require('express')
