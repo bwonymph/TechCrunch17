@@ -15,6 +15,9 @@ class App extends React.Component {
             onClose: function(el) { console.log("close")}, // A function to be called when sideNav is closed
         });
     }
+    activate(){
+        console.log("button was clicked");        
+    }
     render(){
         return (
             <div>
@@ -22,8 +25,10 @@ class App extends React.Component {
                     <li><Link to="/sos" className="waves-effect">SOS</Link></li>
                     <li><Link to="/routing" className="waves-effect">Routing</Link></li>
                 </ul>
-                <div className="fixed-action-btn">
-                    <a data-activates="slide-out" className="btn-floating btn-large red">
+                {/*<a href="#" data-activates="slide-out" className="fixed-action-btn button-collapse btn-floating btn-large red"><i className="material-icons">menu</i></a>*/}
+                
+                <div data-activates="slide-out" className="fixed-action-btn button-collapse" onClick={()=>this.activate()}>
+                    <a className="btn-floating btn-large red">
                         <i className="large material-icons">menu</i>
                     </a>
                 </div>

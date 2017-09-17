@@ -11688,8 +11688,15 @@ var App = function (_React$Component) {
             });
         }
     }, {
+        key: "activate",
+        value: function activate() {
+            console.log("button was clicked");
+        }
+    }, {
         key: "render",
         value: function render() {
+            var _this2 = this;
+
             return _react2.default.createElement(
                 "div",
                 null,
@@ -11717,10 +11724,12 @@ var App = function (_React$Component) {
                 ),
                 _react2.default.createElement(
                     "div",
-                    { className: "fixed-action-btn" },
+                    { "data-activates": "slide-out", className: "fixed-action-btn button-collapse", onClick: function onClick() {
+                            return _this2.activate();
+                        } },
                     _react2.default.createElement(
                         "a",
-                        { "data-activates": "slide-out", className: "btn-floating btn-large red" },
+                        { className: "btn-floating btn-large red" },
                         _react2.default.createElement(
                             "i",
                             { className: "large material-icons" },
