@@ -10,8 +10,8 @@ function parse(str) {
 var Nexmo = require('nexmo');
 
 var nexmo = new Nexmo({
-    apiKey: '',
-    apiSecret: '',
+    apiKey: 'd4f97f0e',
+    apiSecret: '2e02d0a63e14517f',
   });
 
 var Express = require('express')
@@ -20,8 +20,8 @@ let app = Express()
 
 var RTM = require("satori-rtm-sdk");
 
-var endpoint = "";
-var appkey = "";
+var endpoint = "wss://h0j3zwoo.api.satori.com";
+var appkey = "d3fE5A8bc1D9C2e8761DfCf7d6cab13a";
 
 var client = new RTM(endpoint, appkey);
 
@@ -34,7 +34,9 @@ client.on('enter-connected', function () {
 		var channelName = 'help';
 		msg1 = parse('%s', req.query.text);
 		var message = {
-			who: 'zebra',
+			lat: '37.7757407',
+			lon: '-122.38955',
+			alert: '3',
 			msg: msg1,
 		};
 		client.publish(channelName, message , function (pdu) {
