@@ -145,7 +145,7 @@ def checkChain(chain):
 
 
 
-state = {u'Alice':50, u'Bob':50}  # Define the initial state
+state = {u'User':1, u'EService':0}  # Define the initial state
 genesisBlockTxns = [state]
 genesisBlockContents = {u'blockNumber':0,u'parentHash':None,u'txnCount':1,u'txns':genesisBlockTxns}
 genesisHash = hashMe( genesisBlockContents )
