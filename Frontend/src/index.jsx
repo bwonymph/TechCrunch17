@@ -4,9 +4,8 @@ import { Link, Route, HashRouter } from "react-router-dom";
 import SOS from "./sos.jsx";
 import Help from "./help.jsx";
 import Heatmap from "./heatmap.jsx";
+import Weather from "./weather.jsx";
 import {mq, satori, pier48sf} from "./globals";
-
-
 
 class App extends React.Component {
     componentDidMount(){
@@ -29,6 +28,7 @@ class App extends React.Component {
                 <ul id="slide-out" className="side-nav">
                     <li><Link to="/sos" className="waves-effect">SOS</Link></li>
                     <li><Link to="/help" className="waves-effect">Seek Help</Link></li>
+                    <li><Link to="/weather" className="waves-effect">Weather</Link></li>
                     <li><Link to="/heatmap" className="waves-effect">Heatmap</Link></li>
                 </ul>                
                 <div data-activates="slide-out" className="fixed-action-btn button-collapse" onClick={()=>this.activate()}>
@@ -38,7 +38,7 @@ class App extends React.Component {
                 </div>
                 <Route path="/sos" render={()=><SOS/>}/>
                 <Route path="/help" render={()=><Help/>}/>
-
+                <Route path="/weather" render={()=><Weather/>}/>
                 <Route path="/heatmap" render={()=><Heatmap/>}/>
             </div>
         );

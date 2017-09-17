@@ -7,5 +7,8 @@ module.exports = {
     mq : {
         key : "QwMOrkHNGKtPozliUHoqCWalFbaJG8mp",
         secret : "mjwQ3vrwawdn9VGG"
+    },
+    ow : {
+        appid : "a705620012e0516932c21c0ae3c633a3"
     }
 };

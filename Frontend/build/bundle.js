@@ -11658,6 +11658,10 @@ var _heatmap = __webpack_require__(233);
 
 var _heatmap2 = _interopRequireDefault(_heatmap);
 
+var _weather = __webpack_require__(236);
+
+var _weather2 = _interopRequireDefault(_weather);
+
 var _globals = __webpack_require__(234);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -11727,6 +11731,15 @@ var App = function (_React$Component) {
                         null,
                         _react2.default.createElement(
                             _reactRouterDom.Link,
+                            { to: "/weather", className: "waves-effect" },
+                            "Weather"
+                        )
+                    ),
+                    _react2.default.createElement(
+                        "li",
+                        null,
+                        _react2.default.createElement(
+                            _reactRouterDom.Link,
                             { to: "/heatmap", className: "waves-effect" },
                             "Heatmap"
                         )
@@ -11752,6 +11765,9 @@ var App = function (_React$Component) {
                     } }),
                 _react2.default.createElement(_reactRouterDom.Route, { path: "/help", render: function render() {
                         return _react2.default.createElement(_help2.default, null);
+                    } }),
+                _react2.default.createElement(_reactRouterDom.Route, { path: "/weather", render: function render() {
+                        return _react2.default.createElement(_weather2.default, null);
                     } }),
                 _react2.default.createElement(_reactRouterDom.Route, { path: "/heatmap", render: function render() {
                         return _react2.default.createElement(_heatmap2.default, null);
@@ -27526,6 +27542,9 @@ module.exports = {
     mq: {
         key: "QwMOrkHNGKtPozliUHoqCWalFbaJG8mp",
         secret: "mjwQ3vrwawdn9VGG"
+    },
+    ow: {
+        appid: "a705620012e0516932c21c0ae3c633a3"
     }
 };
 
@@ -27561,7 +27580,7 @@ var Help = function (_React$Component) {
         var _this = _possibleConstructorReturn(this, (Help.__proto__ || Object.getPrototypeOf(Help)).call(this, props));
 
         _this.state = {
-            center: _globals.pier48sf,
+            center: [_globals.pier48sf[0] - .1, _globals.pier48sf[1]],
             input: "",
             publishId: -1
         };
@@ -27630,6 +27649,7 @@ var Help = function (_React$Component) {
 
                     if (pdu.action === 'rtm/publish/ok') {
                         console.log('Publish confirmed');
+                        Materialize.toast("Successfully sent an SOS signal!", 4000);
                         self.getAcceptances();
                     } else {
                         console.log('Failed to publish. RTM replied with the error  ' + pdu.body.error + ': ' + pdu.body.reason);
@@ -27707,6 +27727,92 @@ var Help = function (_React$Component) {
 }(_react2.default.Component);
 
 module.exports = Help;
+
+/***/ }),
+/* 236 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(8);
+
+var _react2 = _interopRequireDefault(_react);
+
+var _globals = __webpack_require__(234);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Weather = function (_React$Component) {
+    _inherits(Weather, _React$Component);
+
+    function Weather(props) {
+        _classCallCheck(this, Weather);
+
+        var _this = _possibleConstructorReturn(this, (Weather.__proto__ || Object.getPrototypeOf(Weather)).call(this, props));
+
+        _this.state = {
+            center: _globals.pier48sf
+        };
+        return _this;
+    }
+
+    _createClass(Weather, [{
+        key: "componentDidMount",
+        value: function componentDidMount() {
+            this.map();
+        }
+    }, {
+        key: "map",
+        value: function map() {
+            var self = this;
+            L.mapquest.key = _globals.mq.key;
+
+            // 'map' refers to a <div> element with the ID map
+            var map = L.mapquest.map('map', {
+                center: self.state.center,
+                layers: L.mapquest.tileLayer('satellite'),
+                zoom: 12
+            });
+
+            /*
+            L.tileLayer(
+                'http://tile.openweathermap.org/map/cloud_new/12/'+this.state.center[0]+'/'+this.state.center[1]+'.png?appid='+ow.appid, {
+            }).addTo(map);
+            */
+            L.tileLayer('http://tile.openweathermap.org/map/cloud_new/3/3/3.png?appid=' + _globals.ow.appid, {}).addTo(map);
+            /*
+            Add controls
+            */
+            map.addControl(L.mapquest.control({
+                position: "topleft"
+            }));
+            // add the weather control
+            L.control.weather({
+                lang: "es",
+                units: "metric"
+            }).addTo(map);
+        }
+    }, {
+        key: "render",
+        value: function render() {
+
+            return _react2.default.createElement("div", { id: "map" });
+        }
+    }]);
+
+    return Weather;
+}(_react2.default.Component);
+
+module.exports = Weather;
 
 /***/ })
 /******/ ]);

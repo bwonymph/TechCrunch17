@@ -6,8 +6,9 @@ class Help extends React.Component {
     constructor(props){
         super(props);
 
+
         this.state = {
-            center : pier48sf,
+            center : [pier48sf[0]-.1, pier48sf[1]],
             input : "",
             publishId : -1
         };
@@ -68,8 +69,9 @@ class Help extends React.Component {
             this.state.client.publish("help", message , function (pdu) {
                 
                 if (pdu.action === 'rtm/publish/ok') {
-                  console.log('Publish confirmed');
-                  self.getAcceptances();
+                    console.log('Publish confirmed');
+                    Materialize.toast("Successfully sent an SOS signal!", 4000);
+                    self.getAcceptances();
                 } else {
                   console.log('Failed to publish. RTM replied with the error  ' +
                       pdu.body.error + ': ' + pdu.body.reason);
