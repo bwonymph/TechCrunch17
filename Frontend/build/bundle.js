@@ -27060,7 +27060,9 @@ var SOS = function (_React$Component) {
         _this.state = {
             peers: [],
             center: pier48sf,
-            map: null
+            map: null,
+            trafficLayer: null,
+            incidentsLayer: null
         };
         return _this;
     }
@@ -27098,7 +27100,14 @@ var SOS = function (_React$Component) {
                     layers: L.mapquest.tileLayer('map'),
                     zoom: 12
                 });
-                map.addLayer(L.mapquest.trafficLayer());
+
+                /*
+                Add layers
+                */
+                var trafficLayer = L.mapquest.trafficLayer();
+                var incidentsLayer = L.mapquest.incidentsLayer();
+                map.addLayer(trafficLayer);
+                map.addLayer(incidentsLayer);
 
                 L.marker(self.state.center, {
                     icon: L.mapquest.icons.marker({
@@ -27111,7 +27120,9 @@ var SOS = function (_React$Component) {
                 }).addTo(map);
 
                 self.setState({
-                    map: map
+                    map: map,
+                    trafficLayer: trafficLayer,
+                    incidentsLayer: incidentsLayer
                 });
             }
         }
@@ -27136,6 +27147,7 @@ var SOS = function (_React$Component) {
             channel.on('rtm/subscription/data', function (pdu) {
                 pdu.body.messages.forEach(function (msg) {
                     console.log(msg);
+                    msg.messages = ["Hello", "world!"];
                     var coords = [msg.lat, msg.lon];
                     var marker = getNewMarker(coords, self.state.peers.length + 1);
                     console.log(marker);
@@ -27161,12 +27173,19 @@ var SOS = function (_React$Component) {
                     var llStart = L.latLng(self.state.center);
                     L.mapquest.directions().route({
                         start: llStart,
-                        end: e.latlng
+                        end: e.latlng,
+                        routeRibbon: {
+                            opacity: 1.0
+                        },
+                        alternateRouteRibbon: {
+                            opacity: 0.8
+                        }
                     }, function (error, response) {
                         L.mapquest.directionsLayer({
                             directionsResponse: response
                         }).addTo(self.state.map);
                     });
+                    self.state.map.removeLayer(self.state.trafficLayer);
                 });
                 return marker;
                 function getRandomColor() {

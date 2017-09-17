@@ -16,7 +16,9 @@ class SOS extends React.Component {
         this.state = {
             peers : [],
             center : pier48sf,
-            map : null
+            map : null,
+            trafficLayer : null,
+            incidentsLayer : null
         };
     }
     componentDidMount(){
@@ -46,7 +48,15 @@ class SOS extends React.Component {
                 layers: L.mapquest.tileLayer('map'),
                 zoom: 12
             });
-            map.addLayer(L.mapquest.trafficLayer());
+
+            /*
+            Add layers
+            */
+            let trafficLayer = L.mapquest.trafficLayer();
+            let incidentsLayer = L.mapquest.incidentsLayer();
+            map.addLayer(trafficLayer);
+            map.addLayer(incidentsLayer);
+            
 
             L.marker(self.state.center, {
                 icon: L.mapquest.icons.marker({
@@ -59,7 +69,9 @@ class SOS extends React.Component {
             }).addTo(map);
 
             self.setState({
-                map : map
+                map : map,
+                trafficLayer : trafficLayer,
+                incidentsLayer : incidentsLayer
             });
         }
     }
@@ -83,6 +95,7 @@ class SOS extends React.Component {
         channel.on('rtm/subscription/data', function (pdu) {
             pdu.body.messages.forEach(function (msg) {
                 console.log(msg);
+                msg.messages = ["Hello", "world!"];
                 let coords = [msg.lat, msg.lon];
                 let marker = getNewMarker(coords, self.state.peers.length + 1);
                 console.log(marker);
@@ -108,12 +121,19 @@ class SOS extends React.Component {
                 let llStart = L.latLng(self.state.center);
                 L.mapquest.directions().route({
                     start: llStart,
-                    end: e.latlng
+                    end: e.latlng,
+                    routeRibbon : {
+                        opacity : 1.0
+                    },
+                    alternateRouteRibbon : {
+                        opacity : 0.8
+                    }
                 }, (error, response) => {
                     L.mapquest.directionsLayer({
                         directionsResponse : response
                     }).addTo(self.state.map);
                 });
+                self.state.map.removeLayer(self.state.trafficLayer);                
             });
             return marker;
             function getRandomColor(){
