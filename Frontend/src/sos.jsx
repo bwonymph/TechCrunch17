@@ -18,7 +18,9 @@ class SOS extends React.Component {
             center : pier48sf,
             map : null,
             trafficLayer : null,
-            incidentsLayer : null
+            incidentsLayer : null,
+            directionsLayer : null,
+            markerText : null
         };
     }
     componentDidMount(){
@@ -50,23 +52,35 @@ class SOS extends React.Component {
             });
 
             /*
+            Add controls
+            */
+            map.addControl(L.mapquest.control({
+                position : "topleft"
+            }));
+
+            /*
             Add layers
             */
             let trafficLayer = L.mapquest.trafficLayer();
             let incidentsLayer = L.mapquest.incidentsLayer();
             map.addLayer(trafficLayer);
-            map.addLayer(incidentsLayer);
+            //map.addLayer(incidentsLayer);
             
 
             L.marker(self.state.center, {
-                icon: L.mapquest.icons.marker({
-                    primaryColor: '#22407F',
-                    secondaryColor: '#3B5998',
+                icon: L.mapquest.icons.via({
+                    primaryColor: '#47adf8',
+                    secondaryColor: '#ffffff',
                     shadow: true,
-                    size: 'md',
-                    symbol: 'A'
+                    size: 'lg'
                 })
             }).addTo(map);
+
+            /*
+            self.state.peers.forEach((p, i) => {
+                getNewMarker([p.lat, p.lon], i).addTo(map);
+            });
+            */
 
             self.setState({
                 map : map,
@@ -74,6 +88,14 @@ class SOS extends React.Component {
                 incidentsLayer : incidentsLayer
             });
         }
+    }
+
+    cancelDirections(){
+        this.state.map.addLayer(this.state.trafficLayer);
+        this.state.map.removeLayer(this.state.directionsLayer);
+        this.setState({
+            markerText : null
+        });
     }
 
     getSignals(){
@@ -89,67 +111,115 @@ class SOS extends React.Component {
 
         client.start();
 
-        let channel = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
+        let helpChannel = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
+        let phoneSpoofChannel = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
 
         /* set callback for PDU with specific action */
-        channel.on('rtm/subscription/data', function (pdu) {
+        helpChannel.on('rtm/subscription/data', handler);
+        phoneSpoofChannel.on('rtm/subscription/data', handler);
+
+        function handler(pdu) {
             pdu.body.messages.forEach(function (msg) {
                 console.log(msg);
-                msg.messages = ["Hello", "world!"];
                 let coords = [msg.lat, msg.lon];
-                let marker = getNewMarker(coords, self.state.peers.length + 1);
-                console.log(marker);
+                let marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
                 marker.addTo(self.state.map);
+                let peer = {
+                    marker : marker,
+                    extraData : msg
+                };
                 self.setState({
-                    peers : [...self.state.peers, msg]
+                    peers : [...self.state.peers, peer]
                 });
+            });
+        }
+    }
+    getNewMarker(coords, symbol, msg=null){
+        let self = this;
+        let marker;
+        if(msg){
+            marker = L.marker(coords, {
+                icon: L.mapquest.icons.flag({
+                    primaryColor: getRandomColor(),
+                    secondaryColor: getRandomColor(),
+                    shadow: true,
+                    size: 'lg',
+                    symbol: msg.substring(0,5),
+                    riseOnHover : true
+                })
+            });
+            marker.extraData = msg;
+        } else {
+            marker = L.marker(coords, {
+                icon: L.mapquest.icons.marker({
+                    primaryColor: getRandomColor(),
+                    secondaryColor: getRandomColor(),
+                    shadow: true,
+                    size: 'sm',
+                    symbol: symbol,
+                    riseOnHover : true
+                })
+            });
+        }
+        
+        marker.on('click', (e)=>{
+            let llStart = L.latLng(self.state.center);
+            L.mapquest.directions().route({
+                start: llStart,
+                end: e.latlng,
+                routeRibbon : {
+                    opacity : 1.0
+                },
+                alternateRouteRibbon : {
+                    opacity : 0.8
+                }
+            }, (error, response) => {
+                let directionsLayer = L.mapquest.directionsLayer({
+                    directionsResponse : response
+                });
+                self.setState({
+                    directionsLayer : directionsLayer,
+                    markerText : marker.extraData
+                });
+                directionsLayer.addTo(self.state.map);
+                self.state.map.removeLayer(self.state.trafficLayer);                    
             });
         });
-
-        function getNewMarker(coords, symbol){
-            let marker = L.marker(coords, {
-                    icon: L.mapquest.icons.marker({
-                        primaryColor: getRandomColor(),
-                        secondaryColor: getRandomColor(),
-                        shadow: true,
-                        size: 'md',
-                        symbol: symbol,
-                        riseOnHover : true
-                    })
-                });
-            marker.on('click', (e)=>{
-                let llStart = L.latLng(self.state.center);
-                L.mapquest.directions().route({
-                    start: llStart,
-                    end: e.latlng,
-                    routeRibbon : {
-                        opacity : 1.0
-                    },
-                    alternateRouteRibbon : {
-                        opacity : 0.8
-                    }
-                }, (error, response) => {
-                    L.mapquest.directionsLayer({
-                        directionsResponse : response
-                    }).addTo(self.state.map);
-                });
-                self.state.map.removeLayer(self.state.trafficLayer);                
-            });
-            return marker;
-            function getRandomColor(){
-                let color = "#";
-                for(let i = 0; i < 3; i++){
-                    let val = (Math.floor(Math.random() * 255)).toString(16);
-                    if(val.length == 1) val = "0" + val;
-                    color += val;
-                }
-                return color;
+        return marker;
+        function getRandomColor(){
+            let color = "#";
+            for(let i = 0; i < 3; i++){
+                let val = (Math.floor(Math.random() * 255)).toString(16);
+                if(val.length == 1) val = "0" + val;
+                color += val;
             }
+            return color;
         }
     }
     render(){
         return (
-            <div>
+            <div id="map-container">
+                {
+                    this.state.directionsLayer && 
+                    <div id="direction-cancel" onClick={()=>this.cancelDirections()}>
+                        <i className="material-icons large red">close</i>
+                    </div>
+                }     
+                {
+                    this.state.markerText &&
+                    <div id="marker-text">
+                        <div className="card blue">
+                            <div className="card-content white-text">
+                                <span className="card-title">SOS Text</span>
+                                <p>{this.state.markerText}</p>
+                            </div>
+                            <div className="card-action">
+                                <a href="#">This is a link</a>
+                                <a href="#">This is a link</a>
+                            </div>
+                        </div>
+                    </div>
+                }         
                 <div id="map"></div>
             </div>
         );

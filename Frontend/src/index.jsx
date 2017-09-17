@@ -24,9 +24,7 @@ class App extends React.Component {
                 <ul id="slide-out" className="side-nav">
                     <li><Link to="/sos" className="waves-effect">SOS</Link></li>
                     <li><Link to="/routing" className="waves-effect">Routing</Link></li>
-                </ul>
-                {/*<a href="#" data-activates="slide-out" className="fixed-action-btn button-collapse btn-floating btn-large red"><i className="material-icons">menu</i></a>*/}
-                
+                </ul>                
                 <div data-activates="slide-out" className="fixed-action-btn button-collapse" onClick={()=>this.activate()}>
                     <a className="btn-floating btn-large red">
                         <i className="large material-icons">menu</i>

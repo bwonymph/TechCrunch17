@@ -27062,7 +27062,9 @@ var SOS = function (_React$Component) {
             center: pier48sf,
             map: null,
             trafficLayer: null,
-            incidentsLayer: null
+            incidentsLayer: null,
+            directionsLayer: null,
+            markerText: null
         };
         return _this;
     }
@@ -27102,22 +27104,35 @@ var SOS = function (_React$Component) {
                 });
 
                 /*
+                Add controls
+                */
+                map.addControl(L.mapquest.control({
+                    position: "topleft"
+                }));
+
+                /*
                 Add layers
                 */
                 var trafficLayer = L.mapquest.trafficLayer();
                 var incidentsLayer = L.mapquest.incidentsLayer();
                 map.addLayer(trafficLayer);
-                map.addLayer(incidentsLayer);
+                //map.addLayer(incidentsLayer);
+
 
                 L.marker(self.state.center, {
-                    icon: L.mapquest.icons.marker({
-                        primaryColor: '#22407F',
-                        secondaryColor: '#3B5998',
+                    icon: L.mapquest.icons.via({
+                        primaryColor: '#47adf8',
+                        secondaryColor: '#ffffff',
                         shadow: true,
-                        size: 'md',
-                        symbol: 'A'
+                        size: 'lg'
                     })
                 }).addTo(map);
+
+                /*
+                self.state.peers.forEach((p, i) => {
+                    getNewMarker([p.lat, p.lon], i).addTo(map);
+                });
+                */
 
                 self.setState({
                     map: map,
@@ -27125,6 +27140,15 @@ var SOS = function (_React$Component) {
                     incidentsLayer: incidentsLayer
                 });
             }
+        }
+    }, {
+        key: "cancelDirections",
+        value: function cancelDirections() {
+            this.state.map.addLayer(this.state.trafficLayer);
+            this.state.map.removeLayer(this.state.directionsLayer);
+            this.setState({
+                markerText: null
+            });
         }
     }, {
         key: "getSignals",
@@ -27141,70 +27165,150 @@ var SOS = function (_React$Component) {
 
             client.start();
 
-            var channel = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
+            var helpChannel = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
+            var phoneSpoofChannel = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
 
             /* set callback for PDU with specific action */
-            channel.on('rtm/subscription/data', function (pdu) {
+            helpChannel.on('rtm/subscription/data', handler);
+            phoneSpoofChannel.on('rtm/subscription/data', handler);
+
+            function handler(pdu) {
                 pdu.body.messages.forEach(function (msg) {
                     console.log(msg);
-                    msg.messages = ["Hello", "world!"];
                     var coords = [msg.lat, msg.lon];
-                    var marker = getNewMarker(coords, self.state.peers.length + 1);
-                    console.log(marker);
+                    var marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
                     marker.addTo(self.state.map);
+                    var peer = {
+                        marker: marker,
+                        extraData: msg
+                    };
                     self.setState({
-                        peers: [].concat(_toConsumableArray(self.state.peers), [msg])
+                        peers: [].concat(_toConsumableArray(self.state.peers), [peer])
                     });
                 });
-            });
+            }
+        }
+    }, {
+        key: "getNewMarker",
+        value: function getNewMarker(coords, symbol) {
+            var msg = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
-            function getNewMarker(coords, symbol) {
-                var marker = L.marker(coords, {
+            var self = this;
+            var marker = void 0;
+            if (msg) {
+                marker = L.marker(coords, {
+                    icon: L.mapquest.icons.flag({
+                        primaryColor: getRandomColor(),
+                        secondaryColor: getRandomColor(),
+                        shadow: true,
+                        size: 'lg',
+                        symbol: msg.substring(0, 5),
+                        riseOnHover: true
+                    })
+                });
+                marker.extraData = msg;
+            } else {
+                marker = L.marker(coords, {
                     icon: L.mapquest.icons.marker({
                         primaryColor: getRandomColor(),
                         secondaryColor: getRandomColor(),
                         shadow: true,
-                        size: 'md',
+                        size: 'sm',
                         symbol: symbol,
                         riseOnHover: true
                     })
                 });
-                marker.on('click', function (e) {
-                    var llStart = L.latLng(self.state.center);
-                    L.mapquest.directions().route({
-                        start: llStart,
-                        end: e.latlng,
-                        routeRibbon: {
-                            opacity: 1.0
-                        },
-                        alternateRouteRibbon: {
-                            opacity: 0.8
-                        }
-                    }, function (error, response) {
-                        L.mapquest.directionsLayer({
-                            directionsResponse: response
-                        }).addTo(self.state.map);
+            }
+
+            marker.on('click', function (e) {
+                var llStart = L.latLng(self.state.center);
+                L.mapquest.directions().route({
+                    start: llStart,
+                    end: e.latlng,
+                    routeRibbon: {
+                        opacity: 1.0
+                    },
+                    alternateRouteRibbon: {
+                        opacity: 0.8
+                    }
+                }, function (error, response) {
+                    var directionsLayer = L.mapquest.directionsLayer({
+                        directionsResponse: response
                     });
+                    self.setState({
+                        directionsLayer: directionsLayer,
+                        markerText: marker.extraData
+                    });
+                    directionsLayer.addTo(self.state.map);
                     self.state.map.removeLayer(self.state.trafficLayer);
                 });
-                return marker;
-                function getRandomColor() {
-                    var color = "#";
-                    for (var i = 0; i < 3; i++) {
-                        var val = Math.floor(Math.random() * 255).toString(16);
-                        if (val.length == 1) val = "0" + val;
-                        color += val;
-                    }
-                    return color;
+            });
+            return marker;
+            function getRandomColor() {
+                var color = "#";
+                for (var i = 0; i < 3; i++) {
+                    var val = Math.floor(Math.random() * 255).toString(16);
+                    if (val.length == 1) val = "0" + val;
+                    color += val;
                 }
+                return color;
             }
         }
     }, {
         key: "render",
         value: function render() {
+            var _this2 = this;
+
             return _react2.default.createElement(
                 "div",
-                null,
+                { id: "map-container" },
+                this.state.directionsLayer && _react2.default.createElement(
+                    "div",
+                    { id: "direction-cancel", onClick: function onClick() {
+                            return _this2.cancelDirections();
+                        } },
+                    _react2.default.createElement(
+                        "i",
+                        { className: "material-icons large red" },
+                        "close"
+                    )
+                ),
+                this.state.markerText && _react2.default.createElement(
+                    "div",
+                    { id: "marker-text" },
+                    _react2.default.createElement(
+                        "div",
+                        { className: "card blue" },
+                        _react2.default.createElement(
+                            "div",
+                            { className: "card-content white-text" },
+                            _react2.default.createElement(
+                                "span",
+                                { className: "card-title" },
+                                "SOS Text"
+                            ),
+                            _react2.default.createElement(
+                                "p",
+                                null,
+                                this.state.markerText
+                            )
+                        ),
+                        _react2.default.createElement(
+                            "div",
+                            { className: "card-action" },
+                            _react2.default.createElement(
+                                "a",
+                                { href: "#" },
+                                "This is a link"
+                            ),
+                            _react2.default.createElement(
+                                "a",
+                                { href: "#" },
+                                "This is a link"
+                            )
+                        )
+                    )
+                ),
                 _react2.default.createElement("div", { id: "map" })
             );
         }
