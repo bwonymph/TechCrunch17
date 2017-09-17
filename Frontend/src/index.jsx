@@ -2,7 +2,10 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { Link, Route, HashRouter } from "react-router-dom";
 import SOS from "./sos.jsx";
-import Routing from "./routing.jsx";
+import Heatmap from "./heatmap.jsx";
+import {mq, satori, pier48sf} from "./globals";
+
+
 
 class App extends React.Component {
     componentDidMount(){
@@ -14,24 +17,25 @@ class App extends React.Component {
             onOpen: function(el) { console.log("open") }, // A function to be called when sideNav is opened
             onClose: function(el) { console.log("close")}, // A function to be called when sideNav is closed
         });
+
     }
-    activate(){
-        console.log("button was clicked");        
-    }
+
+
+
     render(){
         return (
             <div>
                 <ul id="slide-out" className="side-nav">
                     <li><Link to="/sos" className="waves-effect">SOS</Link></li>
-                    <li><Link to="/routing" className="waves-effect">Routing</Link></li>
+                    <li><Link to="/heatmap" className="waves-effect">Heatmap</Link></li>
                 </ul>                
                 <div data-activates="slide-out" className="fixed-action-btn button-collapse" onClick={()=>this.activate()}>
                     <a className="btn-floating btn-large red">
                         <i className="large material-icons">menu</i>
                     </a>
                 </div>
-                <Route path="/sos" component={SOS}/>
-                <Route path="/routing" component={Routing}/>
+                <Route path="/sos" render={()=><SOS/>}/>
+                <Route path="/heatmap" render={()=><Heatmap/>}/>
             </div>
         );
     }

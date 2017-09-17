@@ -11650,9 +11650,11 @@ var _sos = __webpack_require__(231);
 
 var _sos2 = _interopRequireDefault(_sos);
 
-var _routing = __webpack_require__(232);
+var _heatmap = __webpack_require__(233);
 
-var _routing2 = _interopRequireDefault(_routing);
+var _heatmap2 = _interopRequireDefault(_heatmap);
+
+var _globals = __webpack_require__(234);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -11688,11 +11690,6 @@ var App = function (_React$Component) {
             });
         }
     }, {
-        key: "activate",
-        value: function activate() {
-            console.log("button was clicked");
-        }
-    }, {
         key: "render",
         value: function render() {
             var _this2 = this;
@@ -11717,8 +11714,8 @@ var App = function (_React$Component) {
                         null,
                         _react2.default.createElement(
                             _reactRouterDom.Link,
-                            { to: "/routing", className: "waves-effect" },
-                            "Routing"
+                            { to: "/heatmap", className: "waves-effect" },
+                            "Heatmap"
                         )
                     )
                 ),
@@ -11737,8 +11734,12 @@ var App = function (_React$Component) {
                         )
                     )
                 ),
-                _react2.default.createElement(_reactRouterDom.Route, { path: "/sos", component: _sos2.default }),
-                _react2.default.createElement(_reactRouterDom.Route, { path: "/routing", component: _routing2.default })
+                _react2.default.createElement(_reactRouterDom.Route, { path: "/sos", render: function render() {
+                        return _react2.default.createElement(_sos2.default, null);
+                    } }),
+                _react2.default.createElement(_reactRouterDom.Route, { path: "/heatmap", render: function render() {
+                        return _react2.default.createElement(_heatmap2.default, null);
+                    } })
             );
         }
     }]);
@@ -27029,6 +27030,8 @@ var _react = __webpack_require__(8);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _globals = __webpack_require__(234);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -27038,16 +27041,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var mp = {
-    key: "QwMOrkHNGKtPozliUHoqCWalFbaJG8mp",
-    secret: "mjwQ3vrwawdn9VGG"
-};
-var satori = {
-    endpoint: "wss://h0j3zwoo.api.satori.com",
-    appkey: "d3fE5A8bc1D9C2e8761DfCf7d6cab13a"
-};
-var pier48sf = [37.77562, -122.386737];
 
 var SOS = function (_React$Component) {
     _inherits(SOS, _React$Component);
@@ -27059,12 +27052,13 @@ var SOS = function (_React$Component) {
 
         _this.state = {
             peers: [],
-            center: pier48sf,
+            center: _globals.pier48sf,
             map: null,
             trafficLayer: null,
             incidentsLayer: null,
             directionsLayer: null,
-            markerText: null
+            markerText: null,
+            mounted: true
         };
         return _this;
     }
@@ -27074,6 +27068,14 @@ var SOS = function (_React$Component) {
         value: function componentDidMount() {
             this.map();
             this.getSignals();
+            this.setState({
+                mounted: true
+            });
+        }
+    }, {
+        key: "componentWillUnmount",
+        value: function componentWillUnmount() {
+            this.setState({ mounted: false });
         }
     }, {
         key: "setCurrentLocation",
@@ -27094,7 +27096,7 @@ var SOS = function (_React$Component) {
             renderMap();
             function renderMap() {
                 var L = window.L;
-                L.mapquest.key = mp.key;
+                L.mapquest.key = _globals.mq.key;
 
                 // 'map' refers to a <div> element with the ID map
                 var map = L.mapquest.map('map', {
@@ -27153,8 +27155,8 @@ var SOS = function (_React$Component) {
     }, {
         key: "getSignals",
         value: function getSignals() {
-            var client = new RTM(satori.endpoint, satori.appkey);
             var self = this;
+            var client = new RTM(_globals.satori.endpoint, _globals.satori.appkey);
             client.on('enter-connected', function () {
                 console.log('Connected to Satori RTM!');
             });
@@ -27165,27 +27167,28 @@ var SOS = function (_React$Component) {
 
             client.start();
 
-            var helpChannel = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
-            var phoneSpoofChannel = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
+            var help = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
+            var phoneSpoof = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
 
-            /* set callback for PDU with specific action */
-            helpChannel.on('rtm/subscription/data', handler);
-            phoneSpoofChannel.on('rtm/subscription/data', handler);
+            help.on('rtm/subscription/data', handler);
+            phoneSpoof.on('rtm/subscription/data', handler);
 
             function handler(pdu) {
-                pdu.body.messages.forEach(function (msg) {
-                    console.log(msg);
-                    var coords = [msg.lat, msg.lon];
-                    var marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
-                    marker.addTo(self.state.map);
-                    var peer = {
-                        marker: marker,
-                        extraData: msg
-                    };
-                    self.setState({
-                        peers: [].concat(_toConsumableArray(self.state.peers), [peer])
+                if (self.state.mounted) {
+                    pdu.body.messages.forEach(function (msg) {
+                        console.log(msg);
+                        var coords = [msg.lat, msg.lon];
+                        var marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
+                        marker.addTo(self.state.map);
+                        var peer = {
+                            marker: marker,
+                            extraData: msg
+                        };
+                        self.setState({
+                            peers: [].concat(_toConsumableArray(self.state.peers), [peer])
+                        });
                     });
-                });
+                }
             }
         }
     }, {
@@ -27196,13 +27199,14 @@ var SOS = function (_React$Component) {
             var self = this;
             var marker = void 0;
             if (msg) {
+                console.log("got message");
                 marker = L.marker(coords, {
                     icon: L.mapquest.icons.flag({
                         primaryColor: getRandomColor(),
                         secondaryColor: getRandomColor(),
                         shadow: true,
                         size: 'lg',
-                        symbol: msg.substring(0, 5),
+                        symbol: msg.replace(/[^a-z0-9]/gi, '').substring(0, 5),
                         riseOnHover: true
                     })
                 });
@@ -27221,27 +27225,30 @@ var SOS = function (_React$Component) {
             }
 
             marker.on('click', function (e) {
-                var llStart = L.latLng(self.state.center);
+                /*
+                let llStart = L.latLng(self.state.center);
                 L.mapquest.directions().route({
                     start: llStart,
                     end: e.latlng,
-                    routeRibbon: {
-                        opacity: 1.0
+                    routeRibbon : {
+                        opacity : 1.0
                     },
-                    alternateRouteRibbon: {
-                        opacity: 0.8
+                    alternateRouteRibbon : {
+                        opacity : 0.8
                     }
-                }, function (error, response) {
-                    var directionsLayer = L.mapquest.directionsLayer({
-                        directionsResponse: response
+                }, (error, response) => {
+                    let directionsLayer = L.mapquest.directionsLayer({
+                        directionsResponse : response
                     });
                     self.setState({
-                        directionsLayer: directionsLayer,
-                        markerText: marker.extraData
+                        directionsLayer : directionsLayer,
+                        markerText : marker.extraData
                     });
                     directionsLayer.addTo(self.state.map);
-                    self.state.map.removeLayer(self.state.trafficLayer);
+                    self.state.map.removeLayer(self.state.trafficLayer);                    
                 });
+                */
+                self.renderDirections(marker, e.latlng);
             });
             return marker;
             function getRandomColor() {
@@ -27255,10 +27262,37 @@ var SOS = function (_React$Component) {
             }
         }
     }, {
+        key: "renderDirections",
+        value: function renderDirections(marker, latlng) {
+            var self = this;
+            var llStart = L.latLng(this.state.center);
+            L.mapquest.directions().route({
+                start: llStart,
+                end: latlng,
+                routeRibbon: {
+                    opacity: 1.0
+                },
+                alternateRouteRibbon: {
+                    opacity: 0.8
+                }
+            }, function (error, response) {
+                var directionsLayer = L.mapquest.directionsLayer({
+                    directionsResponse: response
+                });
+                self.setState({
+                    directionsLayer: directionsLayer,
+                    markerText: marker.extraData
+                });
+                directionsLayer.addTo(self.state.map);
+                self.state.map.removeLayer(self.state.trafficLayer);
+            });
+        }
+    }, {
         key: "render",
         value: function render() {
             var _this2 = this;
 
+            var self = this;
             return _react2.default.createElement(
                 "div",
                 { id: "map-container" },
@@ -27273,7 +27307,7 @@ var SOS = function (_React$Component) {
                         "close"
                     )
                 ),
-                this.state.markerText && _react2.default.createElement(
+                this.state.markerText ? _react2.default.createElement(
                     "div",
                     { id: "marker-text" },
                     _react2.default.createElement(
@@ -27308,6 +27342,35 @@ var SOS = function (_React$Component) {
                             )
                         )
                     )
+                ) : _react2.default.createElement(
+                    "div",
+                    { id: "total-text" },
+                    _react2.default.createElement(
+                        "div",
+                        { className: "collection" },
+                        this.state.peers.map(function (p, i) {
+                            if (p.extraData.msg) {
+                                var _routeToPeer = function _routeToPeer() {
+                                    console.log(p.marker);
+                                    console.log(p.extraData);
+                                    var coords = L.latLng([p.extraData.lat, p.extraData.lon]);
+                                    self.renderDirections(p.marker, coords);
+                                };
+
+                                return _react2.default.createElement(
+                                    "div",
+                                    { key: i, onClick: function onClick() {
+                                            return _routeToPeer();
+                                        } },
+                                    _react2.default.createElement(
+                                        "div",
+                                        { className: "collection-item" },
+                                        p.extraData.msg
+                                    )
+                                );
+                            }
+                        })
+                    )
                 ),
                 _react2.default.createElement("div", { id: "map" })
             );
@@ -27320,7 +27383,8 @@ var SOS = function (_React$Component) {
 module.exports = SOS;
 
 /***/ }),
-/* 232 */
+/* 232 */,
+/* 233 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27332,6 +27396,8 @@ var _react = __webpack_require__(8);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _globals = __webpack_require__(234);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -27340,31 +27406,133 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var Routing = function (_React$Component) {
-    _inherits(Routing, _React$Component);
+var Heatmap = function (_React$Component) {
+    _inherits(Heatmap, _React$Component);
 
-    function Routing() {
-        _classCallCheck(this, Routing);
+    function Heatmap(props) {
+        _classCallCheck(this, Heatmap);
 
-        return _possibleConstructorReturn(this, (Routing.__proto__ || Object.getPrototypeOf(Routing)).apply(this, arguments));
+        var _this = _possibleConstructorReturn(this, (Heatmap.__proto__ || Object.getPrototypeOf(Heatmap)).call(this, props));
+
+        _this.state = {
+            map: null,
+            heatLayer: null,
+            center: _globals.pier48sf,
+            mounted: true
+        };
+        return _this;
     }
 
-    _createClass(Routing, [{
+    _createClass(Heatmap, [{
+        key: "componentDidMount",
+        value: function componentDidMount() {
+            console.log("l");
+            this.map();
+            this.getSignals();
+            this.setState({
+                mounted: true
+            });
+        }
+    }, {
+        key: "componentWillUnmount",
+        value: function componentWillUnmount() {
+            this.setState({ mounted: false });
+        }
+    }, {
+        key: "map",
+        value: function map() {
+            var self = this;
+            L.mapquest.key = _globals.mq.key;
+
+            // 'map' refers to a <div> element with the ID map
+            var map = L.mapquest.map('map', {
+                center: self.state.center,
+                layers: L.mapquest.tileLayer('satellite'),
+                zoom: 12
+            });
+
+            /*
+            Add controls
+            */
+            map.addControl(L.mapquest.control({
+                position: "topleft"
+            }));
+
+            /*
+            Add heatmap
+            */
+            var heatLayer = L.heatLayer([]).addTo(map);
+
+            this.setState({
+                map: map,
+                heatLayer: heatLayer
+            });
+        }
+    }, {
+        key: "getSignals",
+        value: function getSignals() {
+            var self = this;
+            var client = new RTM(_globals.satori.endpoint, _globals.satori.appkey);
+            client.on('enter-connected', function () {
+                console.log('Connected to Satori RTM!');
+            });
+
+            client.on('error', function (error) {
+                console.log('Failed to connect', error);
+            });
+
+            client.start();
+
+            var help = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
+            var phoneSpoof = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
+
+            help.on('rtm/subscription/data', handler);
+            phoneSpoof.on('rtm/subscription/data', handler);
+
+            function handler(pdu) {
+                if (self.state.mounted) {
+                    pdu.body.messages.forEach(function (msg) {
+                        /*
+                        self.setState({
+                            points : [...self.state.points, [msg.lat, msg.lon, .5]]
+                        });
+                        */
+                        console.log(msg);
+                        self.state.heatLayer.addLatLng(L.latLng([msg.lat, msg.lon]));
+                    });
+                }
+            }
+        }
+    }, {
         key: "render",
         value: function render() {
-            console.log("ROuting rendered");
-            return _react2.default.createElement(
-                "div",
-                null,
-                "In routing"
-            );
+            return _react2.default.createElement("div", { id: "map" });
         }
     }]);
 
-    return Routing;
+    return Heatmap;
 }(_react2.default.Component);
 
-module.exports = Routing;
+module.exports = Heatmap;
+
+/***/ }),
+/* 234 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = {
+    satori: {
+        endpoint: "wss://h0j3zwoo.api.satori.com",
+        appkey: "d3fE5A8bc1D9C2e8761DfCf7d6cab13a"
+    },
+    pier48sf: [37.77562, -122.386737],
+    mq: {
+        key: "QwMOrkHNGKtPozliUHoqCWalFbaJG8mp",
+        secret: "mjwQ3vrwawdn9VGG"
+    }
+};
 
 /***/ })
 /******/ ]);

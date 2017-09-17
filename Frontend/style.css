@@ -27,6 +27,16 @@
     right : 20px;
     top : 20px;
 }
+#total-text {
+    position : fixed;
+    display: inline-block;
+    z-index: 1000;
+    right : 20px;
+    top : 20px;
+}
+#total-text:hover {
+    cursor : pointer;
+}
 #direction-cancel:hover {
     cursor: pointer;
 }

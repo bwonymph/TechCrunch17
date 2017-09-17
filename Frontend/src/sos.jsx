@@ -1,18 +1,11 @@
 import React from "react";
+import {mq, satori, pier48sf} from "./globals";
 
-const mp = {
-    key : "QwMOrkHNGKtPozliUHoqCWalFbaJG8mp",
-    secret : "mjwQ3vrwawdn9VGG"
-};
-const satori = {
-    endpoint : "wss://h0j3zwoo.api.satori.com",
-    appkey : "d3fE5A8bc1D9C2e8761DfCf7d6cab13a"
-};
-const pier48sf = [37.77562,-122.386737];
 
 class SOS extends React.Component {
     constructor(props){
-        super(props);
+        super(props);        
+        
         this.state = {
             peers : [],
             center : pier48sf,
@@ -20,13 +13,21 @@ class SOS extends React.Component {
             trafficLayer : null,
             incidentsLayer : null,
             directionsLayer : null,
-            markerText : null
+            markerText : null,
+            mounted : true
         };
     }
+
     componentDidMount(){
         this.map();
         this.getSignals();
+        this.setState({
+            mounted : true
+        });
     }
+    componentWillUnmount() {
+        this.setState({mounted:false});
+     }
     setCurrentLocation(){
         let self = this;
         navigator.geolocation.getCurrentPosition((position)=>{
@@ -42,7 +43,7 @@ class SOS extends React.Component {
         renderMap();
         function renderMap(){
             let L = window.L;
-            L.mapquest.key = mp.key;
+            L.mapquest.key = mq.key;
 
             // 'map' refers to a <div> element with the ID map
             let map = L.mapquest.map('map', {
@@ -99,8 +100,8 @@ class SOS extends React.Component {
     }
 
     getSignals(){
-        let client = new RTM(satori.endpoint, satori.appkey);
         let self = this;
+        let client = new RTM(satori.endpoint, satori.appkey);
         client.on('enter-connected', function () {
             console.log('Connected to Satori RTM!');
         });
@@ -111,40 +112,43 @@ class SOS extends React.Component {
 
         client.start();
 
-        let helpChannel = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
-        let phoneSpoofChannel = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
-
-        /* set callback for PDU with specific action */
-        helpChannel.on('rtm/subscription/data', handler);
-        phoneSpoofChannel.on('rtm/subscription/data', handler);
+        let help = client.subscribe('help', RTM.SubscriptionMode.SIMPLE);
+        let phoneSpoof = client.subscribe('phoneSpoof', RTM.SubscriptionMode.SIMPLE);
+        
+        
+        help.on('rtm/subscription/data', handler);
+        phoneSpoof.on('rtm/subscription/data', handler);
 
         function handler(pdu) {
-            pdu.body.messages.forEach(function (msg) {
-                console.log(msg);
-                let coords = [msg.lat, msg.lon];
-                let marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
-                marker.addTo(self.state.map);
-                let peer = {
-                    marker : marker,
-                    extraData : msg
-                };
-                self.setState({
-                    peers : [...self.state.peers, peer]
+            if(self.state.mounted){
+                pdu.body.messages.forEach(function (msg) {
+                    console.log(msg);
+                    let coords = [msg.lat, msg.lon];
+                    let marker = self.getNewMarker(coords, self.state.peers.length + 1, msg.msg);
+                    marker.addTo(self.state.map);
+                    let peer = {
+                        marker : marker,
+                        extraData : msg
+                    };
+                    self.setState({
+                        peers : [...self.state.peers, peer]
+                    });
                 });
-            });
+            }
         }
     }
     getNewMarker(coords, symbol, msg=null){
         let self = this;
         let marker;
         if(msg){
+            console.log("got message");
             marker = L.marker(coords, {
                 icon: L.mapquest.icons.flag({
                     primaryColor: getRandomColor(),
                     secondaryColor: getRandomColor(),
                     shadow: true,
                     size: 'lg',
-                    symbol: msg.substring(0,5),
+                    symbol: msg.replace(/[^a-z0-9]/gi, '').substring(0,5),
                     riseOnHover : true
                 })
             });
@@ -163,6 +167,7 @@ class SOS extends React.Component {
         }
         
         marker.on('click', (e)=>{
+            /*
             let llStart = L.latLng(self.state.center);
             L.mapquest.directions().route({
                 start: llStart,
@@ -184,6 +189,8 @@ class SOS extends React.Component {
                 directionsLayer.addTo(self.state.map);
                 self.state.map.removeLayer(self.state.trafficLayer);                    
             });
+            */
+            self.renderDirections(marker, e.latlng);
         });
         return marker;
         function getRandomColor(){
@@ -196,7 +203,32 @@ class SOS extends React.Component {
             return color;
         }
     }
+    renderDirections(marker, latlng){
+        let self = this;
+        let llStart = L.latLng(this.state.center);
+        L.mapquest.directions().route({
+            start: llStart,
+            end: latlng,
+            routeRibbon : {
+                opacity : 1.0
+            },
+            alternateRouteRibbon : {
+                opacity : 0.8
+            }
+        }, (error, response) => {
+            let directionsLayer = L.mapquest.directionsLayer({
+                directionsResponse : response
+            });
+            self.setState({
+                directionsLayer : directionsLayer,
+                markerText : marker.extraData
+            });
+            directionsLayer.addTo(self.state.map);
+            self.state.map.removeLayer(self.state.trafficLayer);                    
+        });
+    }
     render(){
+        let self = this;
         return (
             <div id="map-container">
                 {
@@ -206,7 +238,8 @@ class SOS extends React.Component {
                     </div>
                 }     
                 {
-                    this.state.markerText &&
+                    this.state.markerText 
+                    ?
                     <div id="marker-text">
                         <div className="card blue">
                             <div className="card-content white-text">
@@ -217,6 +250,26 @@ class SOS extends React.Component {
                                 <a href="#">This is a link</a>
                                 <a href="#">This is a link</a>
                             </div>
+                        </div>
+                    </div>
+                    :
+                    <div id="total-text">
+                        <div className="collection">
+                            {this.state.peers.map((p, i)=>{
+                                if(p.extraData.msg){
+                                    return (
+                                        <div key={i} onClick={()=>routeToPeer()}>
+                                            <div className="collection-item">{p.extraData.msg}</div>
+                                        </div>
+                                    );
+                                    function routeToPeer(){
+                                        console.log(p.marker);
+                                        console.log(p.extraData);
+                                        let coords = L.latLng([p.extraData.lat, p.extraData.lon]);
+                                        self.renderDirections(p.marker, coords);
+                                    }
+                                }
+                            })}
                         </div>
                     </div>
                 }         
