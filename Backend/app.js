@@ -34,7 +34,7 @@ client.on('enter-connected', function () {
 		var channelName = 'help';
 		msg1 = parse('%s', req.query.text);
 		var message = {
-			lat: '37.7757407', #for testing, subtitute data from req.query.text
+			lat: '37.7757407', //for testing, subtitute data from req.query.text
 			lon: '-122.38955',
 			alert: '3',
 			msg: msg1,
