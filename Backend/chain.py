@@ -119,7 +119,7 @@ def makeBlock(txns,chain):
 
 def checkBlockHash(block):
     # Raise an exception if the hash does not match the block contents
-    expectedHash = hashMe( block['contents'] )
+    expectedHash = hashMe( block['contents'] )  
     if block['hash']!=expectedHash:
         raise Exception('Hash does not match contents of block %s'%
                         block['contents']['blockNumber'])
@@ -233,6 +233,8 @@ while len(txnBuffer) > 0:
 ###############################################################################################################
 
 
+###This is to verify block chain when adding new users. Need to be moved to separate file
+
 import copy
 nodeBchain = copy.copy(chain)
 nodeBtxns  = [makeTransaction() for i in range(5)]
@@ -250,19 +252,4 @@ except:
 print("Blockchain on Node A is now %s blocks long"%len(chain))
 print(chain[1])
 print(state)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
