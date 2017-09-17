@@ -27230,29 +27230,6 @@ var SOS = function (_React$Component) {
             }
 
             marker.on('click', function (e) {
-                /*
-                let llStart = L.latLng(self.state.center);
-                L.mapquest.directions().route({
-                    start: llStart,
-                    end: e.latlng,
-                    routeRibbon : {
-                        opacity : 1.0
-                    },
-                    alternateRouteRibbon : {
-                        opacity : 0.8
-                    }
-                }, (error, response) => {
-                    let directionsLayer = L.mapquest.directionsLayer({
-                        directionsResponse : response
-                    });
-                    self.setState({
-                        directionsLayer : directionsLayer,
-                        markerText : marker.extraData
-                    });
-                    directionsLayer.addTo(self.state.map);
-                    self.state.map.removeLayer(self.state.trafficLayer);                    
-                });
-                */
                 self.renderDirections(marker, e.latlng);
             });
             return marker;
@@ -27571,23 +27548,56 @@ var Help = function (_React$Component) {
         var _this = _possibleConstructorReturn(this, (Help.__proto__ || Object.getPrototypeOf(Help)).call(this, props));
 
         _this.state = {
-            center: _globals.pier48sf
+            center: _globals.pier48sf,
+            input: ""
         };
         return _this;
     }
 
     _createClass(Help, [{
-        key: 'componentDidMount',
+        key: "componentDidMount",
         value: function componentDidMount() {
             this.map();
-            this.sendSignals();
+            this.connect();
         }
     }, {
-        key: 'sendSignals',
-        value: function sendSignals() {}
+        key: "connect",
+        value: function connect() {
+            var client = new RTM(_globals.satori.endpoint, _globals.satori.appkey);
+            client.on('enter-connected', function () {
+                console.log('Connected to Satori RTM!');
+            });
+
+            client.on('error', function (error) {
+                console.log('Failed to connect', error);
+            });
+
+            client.start();
+
+            this.setState({
+                client: client
+            });
+        }
     }, {
-        key: 'map',
+        key: "sendSignal",
+        value: function sendSignal() {
+            var message = {
+                lat: this.state.center[0],
+                lon: this.state.center[1],
+                msg: this.state.input
+            };
+            this.state.client.publish("help", message, function (pdu) {
+                if (pdu.action === 'rtm/publish/ok') {
+                    console.log('Publish confirmed');
+                } else {
+                    console.log('Failed to publish. RTM replied with the error  ' + pdu.body.error + ': ' + pdu.body.reason);
+                }
+            });
+        }
+    }, {
+        key: "map",
         value: function map() {
+            var self = this;
 
             L.mapquest.key = _globals.mq.key;
             // 'map' refers to a <div> element with the ID map
@@ -27617,9 +27627,34 @@ var Help = function (_React$Component) {
             });
         }
     }, {
-        key: 'render',
+        key: "render",
         value: function render() {
-            return _react2.default.createElement('div', { id: 'map' });
+            var _this2 = this;
+
+            var self = this;
+            return _react2.default.createElement(
+                "div",
+                { id: "map-container" },
+                _react2.default.createElement(
+                    "div",
+                    { id: "direction-cancel", className: "input-field" },
+                    _react2.default.createElement("input", { type: "text", onChange: inputChanged, className: "validate", placeholder: "message" }),
+                    _react2.default.createElement(
+                        "button",
+                        { className: "waves-effect waves-light btn", onClick: function onClick() {
+                                return _this2.sendSignal();
+                            } },
+                        "Submit"
+                    )
+                ),
+                _react2.default.createElement("div", { id: "map" })
+            );
+            function inputChanged(evt) {
+                self.setState({
+                    input: evt.currentTarget.value
+                });
+                console.log(self.state.input);
+            }
         }
     }]);
 

@@ -157,29 +157,6 @@ class SOS extends React.Component {
         }
         
         marker.on('click', (e)=>{
-            /*
-            let llStart = L.latLng(self.state.center);
-            L.mapquest.directions().route({
-                start: llStart,
-                end: e.latlng,
-                routeRibbon : {
-                    opacity : 1.0
-                },
-                alternateRouteRibbon : {
-                    opacity : 0.8
-                }
-            }, (error, response) => {
-                let directionsLayer = L.mapquest.directionsLayer({
-                    directionsResponse : response
-                });
-                self.setState({
-                    directionsLayer : directionsLayer,
-                    markerText : marker.extraData
-                });
-                directionsLayer.addTo(self.state.map);
-                self.state.map.removeLayer(self.state.trafficLayer);                    
-            });
-            */
             self.renderDirections(marker, e.latlng);
         });
         return marker;
