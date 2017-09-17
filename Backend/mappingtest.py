@@ -1,11 +1,6 @@
 #check backend
 from __future__ import print_function
 from satori.rtm.client import make_client, SubscriptionMode
-from sparkpost import SparkPost
-# from FlowrouteMessagingLib.Models.Message import Message
-# from FlowrouteMessagingLib.Controllers.APIController import APIController    
-
-# from googleapiclient.discovery import build
 from google.cloud import translate
 
 
@@ -140,9 +135,7 @@ else:
 print(timer2)
 
 
- 
-sparky = SparkPost('d50127c96fc6c8bf5ffca5e35e18bf71d3c2cf1b') #Begin sparkpost API
- 
+  
 # #Translation services for text
 # translate_client = translate.Client()
 
@@ -157,14 +150,6 @@ sparky = SparkPost('d50127c96fc6c8bf5ffca5e35e18bf71d3c2cf1b') #Begin sparkpost 
 #     target_language=target)
 
 text = 'Emergency services are on their way 5 min'
-
-response = sparky.transmissions.send( #Send email to emergency services/doctor for prognosis
-    use_sandbox=True,
-    recipients=[''],
-    html='<html><body><p>%s'%text,
-    from_email='localpart@sparkpostbox.com',
-    subject='Service Update!')
-
 
 def send_final():
     with make_client(endpoint=endpoint, appkey=appkey) as client:
