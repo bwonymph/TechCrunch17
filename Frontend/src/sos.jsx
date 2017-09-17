@@ -11,7 +11,6 @@ class SOS extends React.Component {
             center : pier48sf,
             map : null,
             trafficLayer : null,
-            incidentsLayer : null,
             directionsLayer : null,
             markerText : null,
             mounted : true
@@ -63,9 +62,7 @@ class SOS extends React.Component {
             Add layers
             */
             let trafficLayer = L.mapquest.trafficLayer();
-            let incidentsLayer = L.mapquest.incidentsLayer();
             map.addLayer(trafficLayer);
-            //map.addLayer(incidentsLayer);
             
 
             L.marker(self.state.center, {
@@ -77,16 +74,9 @@ class SOS extends React.Component {
                 })
             }).addTo(map);
 
-            /*
-            self.state.peers.forEach((p, i) => {
-                getNewMarker([p.lat, p.lon], i).addTo(map);
-            });
-            */
-
             self.setState({
                 map : map,
-                trafficLayer : trafficLayer,
-                incidentsLayer : incidentsLayer
+                trafficLayer : trafficLayer
             });
         }
     }
@@ -234,7 +224,7 @@ class SOS extends React.Component {
                 {
                     this.state.directionsLayer && 
                     <div id="direction-cancel" onClick={()=>this.cancelDirections()}>
-                        <i className="material-icons large red">close</i>
+                        <i className="material-icons large red-text">close</i>
                     </div>
                 }     
                 {

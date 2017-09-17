@@ -11650,6 +11650,10 @@ var _sos = __webpack_require__(231);
 
 var _sos2 = _interopRequireDefault(_sos);
 
+var _help = __webpack_require__(235);
+
+var _help2 = _interopRequireDefault(_help);
+
 var _heatmap = __webpack_require__(233);
 
 var _heatmap2 = _interopRequireDefault(_heatmap);
@@ -11714,6 +11718,15 @@ var App = function (_React$Component) {
                         null,
                         _react2.default.createElement(
                             _reactRouterDom.Link,
+                            { to: "/help", className: "waves-effect" },
+                            "Seek Help"
+                        )
+                    ),
+                    _react2.default.createElement(
+                        "li",
+                        null,
+                        _react2.default.createElement(
+                            _reactRouterDom.Link,
                             { to: "/heatmap", className: "waves-effect" },
                             "Heatmap"
                         )
@@ -11736,6 +11749,9 @@ var App = function (_React$Component) {
                 ),
                 _react2.default.createElement(_reactRouterDom.Route, { path: "/sos", render: function render() {
                         return _react2.default.createElement(_sos2.default, null);
+                    } }),
+                _react2.default.createElement(_reactRouterDom.Route, { path: "/help", render: function render() {
+                        return _react2.default.createElement(_help2.default, null);
                     } }),
                 _react2.default.createElement(_reactRouterDom.Route, { path: "/heatmap", render: function render() {
                         return _react2.default.createElement(_heatmap2.default, null);
@@ -27055,7 +27071,6 @@ var SOS = function (_React$Component) {
             center: _globals.pier48sf,
             map: null,
             trafficLayer: null,
-            incidentsLayer: null,
             directionsLayer: null,
             markerText: null,
             mounted: true
@@ -27116,10 +27131,7 @@ var SOS = function (_React$Component) {
                 Add layers
                 */
                 var trafficLayer = L.mapquest.trafficLayer();
-                var incidentsLayer = L.mapquest.incidentsLayer();
                 map.addLayer(trafficLayer);
-                //map.addLayer(incidentsLayer);
-
 
                 L.marker(self.state.center, {
                     icon: L.mapquest.icons.via({
@@ -27130,16 +27142,9 @@ var SOS = function (_React$Component) {
                     })
                 }).addTo(map);
 
-                /*
-                self.state.peers.forEach((p, i) => {
-                    getNewMarker([p.lat, p.lon], i).addTo(map);
-                });
-                */
-
                 self.setState({
                     map: map,
-                    trafficLayer: trafficLayer,
-                    incidentsLayer: incidentsLayer
+                    trafficLayer: trafficLayer
                 });
             }
         }
@@ -27303,7 +27308,7 @@ var SOS = function (_React$Component) {
                         } },
                     _react2.default.createElement(
                         "i",
-                        { className: "material-icons large red" },
+                        { className: "material-icons large red-text" },
                         "close"
                     )
                 ),
@@ -27533,6 +27538,95 @@ module.exports = {
         secret: "mjwQ3vrwawdn9VGG"
     }
 };
+
+/***/ }),
+/* 235 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(8);
+
+var _react2 = _interopRequireDefault(_react);
+
+var _globals = __webpack_require__(234);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Help = function (_React$Component) {
+    _inherits(Help, _React$Component);
+
+    function Help(props) {
+        _classCallCheck(this, Help);
+
+        var _this = _possibleConstructorReturn(this, (Help.__proto__ || Object.getPrototypeOf(Help)).call(this, props));
+
+        _this.state = {
+            center: _globals.pier48sf
+        };
+        return _this;
+    }
+
+    _createClass(Help, [{
+        key: 'componentDidMount',
+        value: function componentDidMount() {
+            this.map();
+            this.sendSignals();
+        }
+    }, {
+        key: 'sendSignals',
+        value: function sendSignals() {}
+    }, {
+        key: 'map',
+        value: function map() {
+
+            L.mapquest.key = _globals.mq.key;
+            // 'map' refers to a <div> element with the ID map
+            var map = L.mapquest.map('map', {
+                center: self.state.center,
+                layers: L.mapquest.tileLayer('map'),
+                zoom: 12
+            });
+            map.addControl(L.mapquest.control({
+                position: "topleft"
+            }));
+            var trafficLayer = L.mapquest.trafficLayer();
+            map.addLayer(trafficLayer);
+
+            L.marker(self.state.center, {
+                icon: L.mapquest.icons.via({
+                    primaryColor: '#47adf8',
+                    secondaryColor: '#ffffff',
+                    shadow: true,
+                    size: 'lg'
+                })
+            }).addTo(map);
+
+            self.setState({
+                map: map,
+                trafficLayer: trafficLayer
+            });
+        }
+    }, {
+        key: 'render',
+        value: function render() {
+            return _react2.default.createElement('div', { id: 'map' });
+        }
+    }]);
+
+    return Help;
+}(_react2.default.Component);
+
+module.exports = Help;
 
 /***/ })
 /******/ ]);
